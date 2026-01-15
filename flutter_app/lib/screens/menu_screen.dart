@@ -12,6 +12,9 @@ final menuProvider = FutureProvider<List<MenuItem>>((ref) async {
 /// Provider for selected category
 final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 
+/// Provider for expanded categories (showing all items)
+final expandedCategoriesProvider = StateProvider<Set<String>>((ref) => {});
+
 /// Menu screen displaying available food items.
 /// Implements optimistic cart updates with immediate UI feedback.
 class MenuScreen extends ConsumerWidget {
@@ -22,6 +25,7 @@ class MenuScreen extends ConsumerWidget {
     final menuAsync = ref.watch(menuProvider);
     final cartState = ref.watch(cartProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
+    final expandedCategories = ref.watch(expandedCategoriesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -88,17 +92,16 @@ class MenuScreen extends ConsumerWidget {
           }
           final sortedCategories = categories.toList()..sort();
 
-          // If no category selected, show category cards
-          if (selectedCategory == null) {
-            return _buildCategoryCards(context, ref, sortedCategories, cartState);
-          }
-
-          // Otherwise, show filtered items for selected category
-          final filteredItems = menuItems.where((item) => item.category == selectedCategory).toList();
-          return _buildItemsList(context, ref, filteredItems, cartState, selectedCategory, sortedCategories);
+          return _buildCategoriesWithItems(
+            context,
+            ref,
+            menuItems,
+            sortedCategories,
+            cartState,
+            expandedCategories,
+          );
         },
       ),
-      // Floating cart summary
       bottomNavigationBar: cartState.isEmpty
           ? null
           : Container(
@@ -154,39 +157,28 @@ class MenuScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryCards(
+  Widget _buildCategoriesWithItems(
     BuildContext context,
     WidgetRef ref,
+    List<MenuItem> allItems,
     List<String> categories,
     CartState cartState,
+    Set<String> expandedCategories,
   ) {
-    return GridView.builder(
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final category = categories[index];
-        final categoryIcons = {
-          'Breakfast': Icons.breakfast_dining,
-          'Fast Food': Icons.fastfood,
-          'Drinks': Icons.local_drink,
-        };
+        final categoryItems = allItems.where((item) => item.category == category).toList();
+        final isExpanded = expandedCategories.contains(category);
+        final displayItems = isExpanded ? categoryItems : categoryItems.take(3).toList();
 
-        return GestureDetector(
-          onTap: () {
-            ref.read(selectedCategoryProvider.notifier).state = category;
-          },
-          child: Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Container(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Category Card Header
+            Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 gradient: LinearGradient(
@@ -197,124 +189,101 @@ class MenuScreen extends ConsumerWidget {
                     Colors.orange.shade600,
                   ],
                 ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    categoryIcons[category] ?? Icons.restaurant,
-                    size: 48,
-                    color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    category,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.1),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
                   ),
                 ],
+                border: Border.all(
+                  color: Colors.orange.shade700,
+                  width: 2,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getCategoryIcon(category),
+                      size: 32,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        category,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildItemsList(
-    BuildContext context,
-    WidgetRef ref,
-    List<MenuItem> items,
-    CartState cartState,
-    String selectedCategory,
-    List<String> allCategories,
-  ) {
-    return Column(
-      children: [
-        // Back button and category title
-        Container(
-          padding: const EdgeInsets.all(16),
-          color: Colors.orange,
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () {
-                  ref.read(selectedCategoryProvider.notifier).state = null;
-                },
-              ),
-              Expanded(
-                child: Text(
-                  selectedCategory,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            const SizedBox(height: 12),
+            // Items
+            ...displayItems.map((item) => _buildMenuItem(context, ref, item, cartState)),
+            // Show More button
+            if (categoryItems.length > 3)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      final notifier = ref.read(expandedCategoriesProvider.notifier);
+                      if (isExpanded) {
+                        notifier.state = expandedCategories..remove(category);
+                      } else {
+                        notifier.state = {...expandedCategories, category};
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.orange, width: 2),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      isExpanded ? 'Show Less' : 'Show More (${categoryItems.length - 3} more)',
+                      style: const TextStyle(
+                        color: Colors.orange,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-        // Items list
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              return _buildMenuItem(context, ref, items[index], cartState);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMenuList(
-    BuildContext context,
-    WidgetRef ref,
-    List<MenuItem> menuItems,
-    CartState cartState,
-  ) {
-    // Group items by category
-    final categories = <String, List<MenuItem>>{};
-    for (final item in menuItems) {
-      categories.putIfAbsent(item.category, () => []).add(item);
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final category = categories.keys.elementAt(index);
-        final items = categories[category]!;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Category header
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                category.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange,
-                ),
-              ),
-            ),
-            // Items in category
-            ...items.map((item) => _buildMenuItem(context, ref, item, cartState)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
           ],
         );
       },
     );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Breakfast':
+        return Icons.breakfast_dining;
+      case 'Fast Food':
+        return Icons.fastfood;
+      case 'Drinks':
+        return Icons.local_drink;
+      default:
+        return Icons.restaurant;
+    }
   }
 
   Widget _buildMenuItem(
