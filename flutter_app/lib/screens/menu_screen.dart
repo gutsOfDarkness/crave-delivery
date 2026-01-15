@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_player/video_player.dart';
+import 'dart:html' as html;
 import '../models/menu_item.dart';
 import '../providers/cart_provider.dart';
 
@@ -14,6 +16,42 @@ final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 
 /// Provider for expanded categories (showing all items)
 final expandedCategoriesProvider = StateProvider<Set<String>>((ref) => {});
+
+/// Provider for video player controller
+final videoControllerProvider = StateNotifierProvider<VideoControllerNotifier, VideoPlayerController?>((ref) {
+  return VideoControllerNotifier();
+});
+
+class VideoControllerNotifier extends StateNotifier<VideoPlayerController?> {
+  VideoControllerNotifier() : super(null) {
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      // Get the current host from the browser window
+      final host = html.window.location.hostname ?? 'localhost';
+      final port = 8888;
+      final videoUrl = 'http://$host:$port/restaurant.mp4';
+      
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(videoUrl),
+      );
+      await controller.initialize();
+      controller.setLooping(true);
+      controller.play();
+      state = controller;
+    } catch (e) {
+      print('Error initializing video: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    state?.dispose();
+    super.dispose();
+  }
+}
 
 /// Menu screen displaying available food items.
 /// Implements optimistic cart updates with immediate UI feedback.
@@ -30,7 +68,7 @@ class MenuScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Food Menu'),
-        backgroundColor: Colors.orange,
+        backgroundColor: Colors.purple.shade300,
         foregroundColor: Colors.white,
         actions: [
           // Cart button with badge
@@ -141,7 +179,7 @@ class MenuScreen extends ConsumerWidget {
                     ElevatedButton(
                       onPressed: () => Navigator.pushNamed(context, '/checkout'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
+                        backgroundColor: Colors.purple.shade300,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -167,9 +205,16 @@ class MenuScreen extends ConsumerWidget {
   ) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: categories.length,
+      itemCount: categories.length + 1, // +1 for video section
       itemBuilder: (context, index) {
-        final category = categories[index];
+        // Video section at index 0
+        if (index == 0) {
+          return _buildVideoSection(context, ref);
+        }
+
+        // Adjust category index
+        final categoryIndex = index - 1;
+        final category = categories[categoryIndex];
         final categoryItems = allItems.where((item) => item.category == category).toList();
         final isExpanded = expandedCategories.contains(category);
         final displayItems = isExpanded ? categoryItems : categoryItems.take(3).toList();
@@ -185,24 +230,24 @@ class MenuScreen extends ConsumerWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.orange.shade400,
-                    Colors.orange.shade600,
+                    Colors.purple.shade400,
+                    Colors.purple.shade600,
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.orange.withOpacity(0.3),
+                    color: Colors.purple.shade300.withOpacity(0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
                   BoxShadow(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.purple.shade300.withOpacity(0.1),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),
                 ],
                 border: Border.all(
-                  color: Colors.orange.shade700,
+                  color: Colors.purple.shade700,
                   width: 2,
                 ),
               ),
@@ -249,7 +294,7 @@ class MenuScreen extends ConsumerWidget {
                       }
                     },
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.orange, width: 2),
+                      side: BorderSide(color: Colors.purple.shade300, width: 2),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -257,8 +302,8 @@ class MenuScreen extends ConsumerWidget {
                     ),
                     child: Text(
                       isExpanded ? 'Show Less' : 'Show More (${categoryItems.length - 3} more)',
-                      style: const TextStyle(
-                        color: Colors.orange,
+                      style: TextStyle(
+                        color: Colors.purple.shade300,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -340,10 +385,10 @@ class MenuScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     item.formattedPrice,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Colors.orange,
+                      color: Colors.purple.shade300,
                     ),
                   ),
                 ],
@@ -360,7 +405,7 @@ class MenuScreen extends ConsumerWidget {
                       _showAddedSnackBar(context, item.name);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
+                      backgroundColor: Colors.purple.shade300,
                       foregroundColor: Colors.white,
                       minimumSize: const Size(80, 36),
                     ),
@@ -369,7 +414,7 @@ class MenuScreen extends ConsumerWidget {
                 else
                   Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.orange),
+                      border: Border.all(color: Colors.purple.shade300),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -380,7 +425,7 @@ class MenuScreen extends ConsumerWidget {
                           onPressed: () {
                             ref.read(cartProvider.notifier).removeItem(item.id);
                           },
-                          color: Colors.orange,
+                          color: Colors.purple.shade300,
                           constraints: const BoxConstraints(
                             minWidth: 32,
                             minHeight: 32,
@@ -398,7 +443,7 @@ class MenuScreen extends ConsumerWidget {
                           onPressed: () {
                             ref.read(cartProvider.notifier).addItem(item);
                           },
-                          color: Colors.orange,
+                          color: Colors.purple.shade300,
                           constraints: const BoxConstraints(
                             minWidth: 32,
                             minHeight: 32,
@@ -420,10 +465,10 @@ class MenuScreen extends ConsumerWidget {
       width: 80,
       height: 80,
       decoration: BoxDecoration(
-        color: Colors.orange.shade100,
+        color: Colors.purple.shade100,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Icon(Icons.fastfood, color: Colors.orange, size: 32),
+      child: Icon(Icons.fastfood, color: Colors.purple.shade300, size: 32),
     );
   }
 
@@ -436,6 +481,62 @@ class MenuScreen extends ConsumerWidget {
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.green,
       ),
+    );
+  }
+
+  Widget _buildVideoSection(BuildContext context, WidgetRef ref) {
+    final videoController = ref.watch(videoControllerProvider);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final videoHeight = screenHeight * 0.30; // 30% of screen height
+
+    if (videoController == null || !videoController.value.isInitialized) {
+      return Container(
+        height: videoHeight,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(color: Colors.purple),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: videoHeight,
+            color: Colors.black,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                VideoPlayer(videoController),
+                if (!videoController.value.isPlaying)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        ref.read(videoControllerProvider.notifier);
+                        videoController.play();
+                      },
+                      icon: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 }

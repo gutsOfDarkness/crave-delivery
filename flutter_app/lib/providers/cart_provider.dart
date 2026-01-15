@@ -1,3 +1,4 @@
+import 'dart:html' as html;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/menu_item.dart';
 import '../models/cart_item.dart';
@@ -189,6 +190,9 @@ final cartProvider = NotifierProvider<CartNotifier, CartState>(() {
 
 /// Provider for API service
 final apiServiceProvider = Provider<ApiService>((ref) {
-  // Configure with your backend URL
-  return ApiService(baseUrl: 'http://localhost:8080');
+  // Get the host from the current window location
+  // This allows the app to work on both desktop (localhost) and mobile (network IP)
+  final host = html.window.location.hostname ?? 'localhost';
+  final baseUrl = 'http://$host:8080';
+  return ApiService(baseUrl: baseUrl);
 });
