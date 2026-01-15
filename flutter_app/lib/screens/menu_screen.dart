@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/menu_item.dart';
 import '../providers/cart_provider.dart';
-import '../services/api_service.dart';
 
 /// Provider for menu items with loading state
 final menuProvider = FutureProvider<List<MenuItem>>((ref) async {

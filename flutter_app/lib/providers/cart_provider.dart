@@ -29,8 +29,12 @@ class CartState {
 
   /// Get quantity for a specific menu item
   int getQuantity(String menuItemId) {
-    final item = items.where((e) => e.menuItem.id == menuItemId).firstOrNull;
-    return item?.quantity ?? 0;
+    try {
+      final item = items.firstWhere((e) => e.menuItem.id == menuItemId);
+      return item.quantity;
+    } catch (e) {
+      return 0;
+    }
   }
 
   CartState copyWith({
