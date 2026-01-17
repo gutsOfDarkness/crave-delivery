@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/menu_item.dart';
 import '../providers/cart_provider.dart';
-import '../animations/sparkle_animation.dart';
+import '../widgets/video_header.dart';
+import '../widgets/menu_item_card.dart';
 
 
 /// Provider for menu items with loading state
 final menuProvider = FutureProvider<List<MenuItem>>((ref) async {
- final apiService = ref.read(apiServiceProvider);
- return await apiService.getMenu();
+  final apiService = ref.read(apiServiceProvider);
+  return await apiService.getMenu();
 });
 
 
@@ -23,502 +24,298 @@ final expandedCategoriesProvider = StateProvider<Set<String>>((ref) => {});
 /// Menu screen displaying available food items.
 /// Implements optimistic cart updates with immediate UI feedback.
 class MenuScreen extends ConsumerWidget {
- const MenuScreen({super.key});
+  const MenuScreen({super.key});
 
 
- @override
- Widget build(BuildContext context, WidgetRef ref) {
-   final menuAsync = ref.watch(menuProvider);
-   final cartState = ref.watch(cartProvider);
-   final selectedCategory = ref.watch(selectedCategoryProvider);
-   final expandedCategories = ref.watch(expandedCategoriesProvider);
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final menuAsync = ref.watch(menuProvider);
+    final cartState = ref.watch(cartProvider);
+    final selectedCategory = ref.watch(selectedCategoryProvider);
+    final expandedCategories = ref.watch(expandedCategoriesProvider);
 
 
-   return Scaffold(
-     backgroundColor: Colors.black,
-     appBar: AppBar(
-       title: const Text('Food Menu'),
-       backgroundColor: Colors.purple.shade300,
-       foregroundColor: Colors.white,
-       actions: [
-         // Cart button with badge
-         Stack(
-           alignment: Alignment.center,
-           children: [
-             IconButton(
-               icon: const Icon(Icons.shopping_cart),
-               onPressed: () => Navigator.pushNamed(context, '/checkout'),
-             ),
-             if (cartState.itemCount > 0)
-               Positioned(
-                 right: 8,
-                 top: 8,
-                 child: Container(
-                   padding: const EdgeInsets.all(4),
-                   decoration: const BoxDecoration(
-                     color: Colors.red,
-                     shape: BoxShape.circle,
-                   ),
-                   constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                   child: Text(
-                     '${cartState.itemCount}',
-                     style: const TextStyle(
-                       color: Colors.white,
-                       fontSize: 10,
-                       fontWeight: FontWeight.bold,
-                     ),
-                     textAlign: TextAlign.center,
-                   ),
-                 ),
-               ),
-           ],
-         ),
-       ],
-     ),
-     body: menuAsync.when(
-       loading: () => const Center(child: CircularProgressIndicator()),
-       error: (error, stack) => Center(
-         child: Column(
-           mainAxisAlignment: MainAxisAlignment.center,
-           children: [
-             const Icon(Icons.error_outline, size: 48, color: Colors.red),
-             const SizedBox(height: 16),
-             Text('Failed to load menu: $error'),
-             const SizedBox(height: 16),
-             ElevatedButton(
-               onPressed: () => ref.invalidate(menuProvider),
-               child: const Text('Retry'),
-             ),
-           ],
-         ),
-       ),
-       data: (menuItems) {
-         // Get unique categories
-         final categories = <String>{};
-         for (final item in menuItems) {
-           categories.add(item.category);
-         }
-         final sortedCategories = categories.toList()..sort();
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: const Text('Raju Gari Kitchen v2.1', style: TextStyle(fontWeight: FontWeight.bold)),
+        actions: [
+          // Cart button with badge
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.shopping_bag_outlined),
+                  onPressed: () => Navigator.pushNamed(context, '/cart'),
+                ),
+                if (cartState.itemCount > 0)
+                  Positioned(
+                    right: 4,
+                    top: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.orange,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        '${cartState.itemCount}',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: menuAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Failed to load menu: $error'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(menuProvider),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+            data: (menuItems) {
+              // Get unique categories
+              final categories = <String>{};
+              for (final item in menuItems) {
+                categories.add(item.category);
+              }
+              final sortedCategories = categories.toList()..sort();
 
 
-         return _buildCategoriesWithItems(
-           context,
-           ref,
-           menuItems,
-           sortedCategories,
-           cartState,
-           expandedCategories,
-         );
-       },
-     ),
-     bottomNavigationBar: cartState.isEmpty
-         ? null
-         : Container(
-             padding: const EdgeInsets.all(16),
-             decoration: BoxDecoration(
-               color: Colors.white,
-               boxShadow: [
-                 BoxShadow(
-                   color: Colors.grey.shade300,
-                   blurRadius: 10,
-                   offset: const Offset(0, -5),
-                 ),
-               ],
-             ),
-             child: SafeArea(
-               child: Row(
-                 children: [
-                   Expanded(
-                     child: Column(
-                       mainAxisSize: MainAxisSize.min,
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         Text(
-                           '${cartState.itemCount} items',
-                           style: TextStyle(color: Colors.grey.shade600),
-                         ),
-                         Text(
-                           cartState.formattedTotal,
-                           style: const TextStyle(
-                             fontSize: 18,
-                             fontWeight: FontWeight.bold,
-                           ),
-                         ),
-                       ],
-                     ),
-                   ),
-                   ElevatedButton(
-                     onPressed: () => Navigator.pushNamed(context, '/checkout'),
-                     style: ElevatedButton.styleFrom(
-                       backgroundColor: Colors.purple.shade300,
-                       foregroundColor: Colors.white,
-                       padding: const EdgeInsets.symmetric(
-                         horizontal: 24,
-                         vertical: 12,
-                       ),
-                     ),
-                     child: const Text('View Cart'),
-                   ),
-                 ],
-               ),
-             ),
-           ),
-   );
- }
+              return _buildCategoriesWithItems(
+                context,
+                ref,
+                menuItems,
+                sortedCategories,
+                cartState,
+                expandedCategories,
+              );
+            },
+          ),
+        ),
+      ),
+      bottomNavigationBar: cartState.isEmpty
+          ? null
+          : Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                border: const Border(top: BorderSide(color: Colors.white10)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${cartState.itemCount} items',
+                                style: TextStyle(color: Colors.grey.shade400),
+                              ),
+                              Text(
+                                cartState.formattedTotal,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pushNamed(context, '/cart'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                          ),
+                          child: const Text(
+                            'View Cart',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
 
 
- Widget _buildCategoriesWithItems(
-   BuildContext context,
-   WidgetRef ref,
-   List<MenuItem> allItems,
-   List<String> categories,
-   CartState cartState,
-   Set<String> expandedCategories,
- ) {
-   return ListView.builder(
-     padding: const EdgeInsets.all(16),
-     itemCount: categories.length + 1, // +1 for video section
-     itemBuilder: (context, index) {
-       // Banner section at index 0 - scrolls with content
-       if (index == 0) {
-         return _buildBannerSection(context);
-       }
+  Widget _buildCategoriesWithItems(
+    BuildContext context,
+    WidgetRef ref,
+    List<MenuItem> allItems,
+    List<String> categories,
+    CartState cartState,
+    Set<String> expandedCategories,
+  ) {
+    // Calculate layout parameters once
+    final width = MediaQuery.of(context).size.width;
+    // Max constraints is 1200, so use that as effective width if larger
+    final effectiveWidth = width > 1200 ? 1200 : width;
+    
+    int crossAxisCount = effectiveWidth > 900 ? 3 : (effectiveWidth > 600 ? 2 : 1);
 
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: categories.length + 1, // +1 for video section
+      itemBuilder: (context, index) {
+        // Banner section at index 0
+        if (index == 0) {
+          return _buildBannerSection(context);
+        }
 
-       // Adjust category index
-       final categoryIndex = index - 1;
-       final category = categories[categoryIndex];
-       final categoryItems = allItems.where((item) => item.category == category).toList();
-       final isExpanded = expandedCategories.contains(category);
-       final displayItems = isExpanded ? categoryItems : categoryItems.take(3).toList();
+        // Adjust category index
+        final categoryIndex = index - 1;
+        final category = categories[categoryIndex];
+        final categoryItems = allItems.where((item) => item.category == category).toList();
+        final isExpanded = expandedCategories.contains(category);
+        final displayItems = isExpanded ? categoryItems : categoryItems.take(3).toList();
 
-
-       return Column(
-         crossAxisAlignment: CrossAxisAlignment.start,
-         children: [
-           // Category Card Header
-           Container(
-             decoration: BoxDecoration(
-               borderRadius: BorderRadius.circular(12),
-               gradient: LinearGradient(
-                 begin: Alignment.topLeft,
-                 end: Alignment.bottomRight,
-                 colors: [
-                   Colors.purple.shade400,
-                   Colors.purple.shade600,
-                 ],
-               ),
-               boxShadow: [
-                 BoxShadow(
-                   color: Colors.purple.shade300.withOpacity(0.3),
-                   blurRadius: 12,
-                   offset: const Offset(0, 6),
-                 ),
-                 BoxShadow(
-                   color: Colors.purple.shade300.withOpacity(0.1),
-                   blurRadius: 24,
-                   offset: const Offset(0, 12),
-                 ),
-               ],
-               border: Border.all(
-                 color: Colors.purple.shade700,
-                 width: 2,
-               ),
-             ),
-             child: Padding(
-               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-               child: Row(
-                 children: [
-                   Icon(
-                     _getCategoryIcon(category),
-                     size: 32,
-                     color: Colors.white,
-                   ),
-                   const SizedBox(width: 12),
-                   Expanded(
-                     child: Text(
-                       category,
-                       style: const TextStyle(
-                         fontSize: 18,
-                         fontWeight: FontWeight.bold,
-                         color: Colors.white,
-                       ),
-                     ),
-                   ),
-                 ],
-               ),
-             ),
-           ),
-           const SizedBox(height: 12),
-           // Items
-           ...displayItems.map((item) => _buildMenuItem(context, ref, item, cartState)),
-           // Show More button
-           if (categoryItems.length > 3)
-             Padding(
-               padding: const EdgeInsets.symmetric(vertical: 12),
-               child: SizedBox(
-                 width: double.infinity,
-                 child: OutlinedButton(
-                   onPressed: () {
-                     final notifier = ref.read(expandedCategoriesProvider.notifier);
-                     if (isExpanded) {
-                       notifier.state = expandedCategories..remove(category);
-                     } else {
-                       notifier.state = {...expandedCategories, category};
-                     }
-                   },
-                   style: OutlinedButton.styleFrom(
-                     side: BorderSide(color: Colors.purple.shade300, width: 2),
-                     padding: const EdgeInsets.symmetric(vertical: 12),
-                     shape: RoundedRectangleBorder(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Category Header
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                children: [
+                   Container(
+                     padding: const EdgeInsets.all(8),
+                     decoration: BoxDecoration(
+                       color: Colors.orange.withOpacity(0.1),
                        borderRadius: BorderRadius.circular(8),
                      ),
+                     child: Icon(
+                      _getCategoryIcon(category),
+                      size: 24,
+                      color: Colors.orange,
+                    ),
                    ),
-                   child: Text(
-                     isExpanded ? 'Show Less' : 'Show More (${categoryItems.length - 3} more)',
-                     style: TextStyle(
-                       color: Colors.purple.shade300,
-                       fontSize: 14,
-                       fontWeight: FontWeight.w600,
+                  const SizedBox(width: 12),
+                  Text(
+                    category.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (categoryItems.length > 3)
+                    TextButton(
+                      onPressed: () {
+                         final notifier = ref.read(expandedCategoriesProvider.notifier);
+                         if (isExpanded) {
+                           notifier.state = expandedCategories..remove(category);
+                         } else {
+                           notifier.state = {...expandedCategories, category};
+                         }
+                      },
+                      child: Text(isExpanded ? 'Show Less' : 'See All'),
+                    ),
+                ],
+              ),
+            ),
+            
+            // Items Layout
+            if (crossAxisCount == 1)
+               Column(
+                 children: displayItems.map((item) => MenuItemCard(
+                   key: ValueKey(item.id),
+                   item: item, 
+                   isGrid: false
+                 )).toList(),
+               )
+            else
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: displayItems.map((item) {
+                   return SizedBox(
+                     width: (effectiveWidth - 32 - (16 * (crossAxisCount - 1))) / crossAxisCount, // 32 for padding
+                     child: MenuItemCard(
+                       key: ValueKey(item.id),
+                       item: item, 
+                       isGrid: true
                      ),
-                   ),
-                 ),
-               ),
-             ),
-           const SizedBox(height: 24),
-         ],
-       );
-     },
-   );
- }
+                   );
+                }).toList(),
+              ),
+
+            const SizedBox(height: 32),
+          ],
+        );
+      },
+    );
+  }
 
 
- IconData _getCategoryIcon(String category) {
-   switch (category) {
-     case 'Breakfast':
-       return Icons.breakfast_dining;
-     case 'Fast Food':
-       return Icons.fastfood;
-     case 'Drinks':
-       return Icons.local_drink;
-     default:
-       return Icons.restaurant;
-   }
- }
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Breakfast':
+        return Icons.breakfast_dining;
+      case 'Fast Food':
+        return Icons.fastfood;
+      case 'Drinks':
+        return Icons.local_drink;
+      default:
+        return Icons.restaurant;
+    }
+  }
 
 
- Widget _buildMenuItem(
-   BuildContext context,
-   WidgetRef ref,
-   MenuItem item,
-   CartState cartState,
- ) {
-   final quantity = cartState.getQuantity(item.id);
-
-
-   return Card(
-     margin: const EdgeInsets.only(bottom: 12),
-     child: Padding(
-       padding: const EdgeInsets.all(12),
-       child: Row(
-         crossAxisAlignment: CrossAxisAlignment.start,
-         children: [
-           // Item image
-           ClipRRect(
-             borderRadius: BorderRadius.circular(8),
-             child: item.imageUrl != null
-                 ? Image.network(
-                     item.imageUrl!,
-                     width: 80,
-                     height: 80,
-                     fit: BoxFit.cover,
-                     errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-                   )
-                 : _buildPlaceholderImage(),
-           ),
-           const SizedBox(width: 12),
-           // Item details
-           Expanded(
-             child: Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                 Text(
-                   item.name,
-                   style: const TextStyle(
-                     fontWeight: FontWeight.bold,
-                     fontSize: 16,
-                   ),
-                 ),
-                 const SizedBox(height: 4),
-                 Text(
-                   item.description,
-                   style: TextStyle(
-                     color: Colors.grey.shade600,
-                     fontSize: 13,
-                   ),
-                   maxLines: 2,
-                   overflow: TextOverflow.ellipsis,
-                 ),
-                 const SizedBox(height: 8),
-                 Text(
-                   item.formattedPrice,
-                   style: TextStyle(
-                     fontWeight: FontWeight.bold,
-                     fontSize: 16,
-                     color: Colors.purple.shade300,
-                   ),
-                 ),
-               ],
-             ),
-           ),
-           // Add to cart button / quantity control
-           Column(
-             children: [
-               if (quantity == 0)
-                 ElevatedButton(
-                   onPressed: () {
-                     // OPTIMISTIC UPDATE: UI updates immediately
-                     ref.read(cartProvider.notifier).addItem(item);
-                     _showAddedSnackBar(context, item.name);
-                   },
-                   style: ElevatedButton.styleFrom(
-                     backgroundColor: Colors.purple.shade300,
-                     foregroundColor: Colors.white,
-                     minimumSize: const Size(80, 36),
-                   ),
-                   child: const Text('ADD'),
-                 )
-               else
-                 Container(
-                   decoration: BoxDecoration(
-                     border: Border.all(color: Colors.purple.shade300),
-                     borderRadius: BorderRadius.circular(8),
-                   ),
-                   child: Row(
-                     mainAxisSize: MainAxisSize.min,
-                     children: [
-                       IconButton(
-                         icon: const Icon(Icons.remove, size: 18),
-                         onPressed: () {
-                           ref.read(cartProvider.notifier).removeItem(item.id);
-                         },
-                         color: Colors.purple.shade300,
-                         constraints: const BoxConstraints(
-                           minWidth: 32,
-                           minHeight: 32,
-                         ),
-                       ),
-                       Text(
-                         '$quantity',
-                         style: const TextStyle(
-                           fontWeight: FontWeight.bold,
-                           fontSize: 16,
-                         ),
-                       ),
-                       IconButton(
-                         icon: const Icon(Icons.add, size: 18),
-                         onPressed: () {
-                           ref.read(cartProvider.notifier).addItem(item);
-                         },
-                         color: Colors.purple.shade300,
-                         constraints: const BoxConstraints(
-                           minWidth: 32,
-                           minHeight: 32,
-                         ),
-                       ),
-                     ],
-                   ),
-                 ),
-             ],
-           ),
-         ],
-       ),
-     ),
-   );
- }
-
-
- Widget _buildPlaceholderImage() {
-   return Container(
-     width: 80,
-     height: 80,
-     decoration: BoxDecoration(
-       color: Colors.purple.shade100,
-       borderRadius: BorderRadius.circular(8),
-     ),
-     child: Icon(Icons.fastfood, color: Colors.purple.shade300, size: 32),
-   );
- }
-
-
- void _showAddedSnackBar(BuildContext context, String itemName) {
-   ScaffoldMessenger.of(context).clearSnackBars();
-   ScaffoldMessenger.of(context).showSnackBar(
-     SnackBar(
-       content: Text('$itemName added to cart'),
-       duration: const Duration(seconds: 1),
-       behavior: SnackBarBehavior.floating,
-       backgroundColor: Colors.green,
-     ),
-   );
- }
-
-
- Widget _buildBannerSection(BuildContext context) {
-   final screenHeight = MediaQuery.of(context).size.height;
-   final bannerHeight = screenHeight * 0.40; // 40% of screen height
-
-   return Container(
-     height: bannerHeight,
-     margin: const EdgeInsets.only(bottom: 20),
-     decoration: BoxDecoration(
-       borderRadius: BorderRadius.circular(12),
-       color: Colors.black,
-     ),
-     clipBehavior: Clip.antiAlias,
-     child: Stack(
-       children: [
-         // Banner image
-         Image.network(
-           '/assets/videos/banner.png',
-           fit: BoxFit.contain,
-           errorBuilder: (context, error, stackTrace) {
-             return Center(
-               child: Icon(
-                 Icons.image_not_supported,
-                 color: Colors.grey.shade400,
-                 size: 48,
-               ),
-             );
-           },
-         ),
-         // Left sparkle animation
-         Positioned(
-           left: 0,
-           top: 0,
-           bottom: 0,
-           width: 100,
-           child: SparkleAnimation(
-             isLeft: true,
-             duration: const Duration(seconds: 3),
-           ),
-         ),
-         // Right sparkle animation
-         Positioned(
-           right: 0,
-           top: 0,
-           bottom: 0,
-           width: 100,
-           child: SparkleAnimation(
-             isLeft: false,
-             duration: const Duration(seconds: 3),
-           ),
-         ),
-       ],
-     ),
-   );
- }
+  Widget _buildBannerSection(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 24),
+      child: VideoHeader(
+        videoAsset: 'assets/videos/promo.mp4',
+        height: 350,
+      ),
+    );
+  }
 }
-
-
-

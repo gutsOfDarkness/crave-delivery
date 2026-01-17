@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/checkout_screen.dart';
 import 'screens/menu_screen.dart';
+import 'screens/cart_screen.dart';
 import 'screens/order_confirmation_screen.dart';
 
 void main() {
@@ -23,19 +24,34 @@ class FoodDeliveryApp extends StatelessWidget {
       title: 'Food Delivery',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.orange,
-          brightness: Brightness.light,
-        ),
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: Colors.black,
         useMaterial3: true,
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.orange,
+          secondary: Colors.orangeAccent,
+          surface: Color(0xFF1E1E1E),
+          background: Colors.black,
+        ),
         appBarTheme: const AppBarTheme(
           centerTitle: true,
           elevation: 0,
+          backgroundColor: Colors.black,
+          surfaceTintColor: Colors.transparent,
+        ),
+        cardTheme: CardTheme(
+          color: const Color(0xFF1E1E1E),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.white10, width: 1),
+          ),
         ),
       ),
       initialRoute: '/',
       routes: {
         '/': (context) => const MenuScreen(),
+        '/cart': (context) => const CartScreen(),
         '/checkout': (context) => const CheckoutScreen(),
         '/order-confirmation': (context) => const OrderConfirmationScreen(),
       },

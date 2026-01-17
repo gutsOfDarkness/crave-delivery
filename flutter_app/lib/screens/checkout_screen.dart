@@ -155,145 +155,125 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Checkout'),
-        backgroundColor: Colors.orange,
+        backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
       body: cartState.isEmpty
           ? const Center(
+              child: Text(
+                'Your cart is empty',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('Your cart is empty', style: TextStyle(fontSize: 18)),
-                ],
-              ),
-            )
-          : Column(
-              children: [
-                // Cart items list
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: cartState.items.length,
-                    itemBuilder: (context, index) {
-                      final item = cartState.items[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              // Item image placeholder
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(Icons.fastfood, color: Colors.orange),
-                              ),
-                              const SizedBox(width: 12),
-                              // Item details
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.menuItem.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      item.menuItem.formattedPrice,
-                                      style: TextStyle(color: Colors.grey.shade600),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Quantity controls
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle_outline),
-                                    onPressed: _isProcessing
-                                        ? null
-                                        : () => ref
-                                            .read(cartProvider.notifier)
-                                            .removeItem(item.menuItem.id),
-                                    color: Colors.orange,
-                                  ),
-                                  Text(
-                                    '${item.quantity}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.add_circle_outline),
-                                    onPressed: _isProcessing
-                                        ? null
-                                        : () => ref
-                                            .read(cartProvider.notifier)
-                                            .addItem(item.menuItem),
-                                    color: Colors.orange,
-                                  ),
-                                ],
-                              ),
-                              // Subtotal
-                              SizedBox(
-                                width: 70,
-                                child: Text(
-                                  item.formattedSubtotal,
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // Error message
-                if (_error != null)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
+                  const Text(
+                    'Payment Options',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    child: Row(
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Payment Methods Placeholder
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade900,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: Column(
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.red),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                        ListTile(
+                          leading: const Icon(Icons.credit_card, color: Colors.orange),
+                          title: const Text('Credit/Debit Card', style: TextStyle(color: Colors.white)),
+                          trailing: Radio(value: true, groupValue: true, onChanged: (_) {}, activeColor: Colors.orange),
+                        ),
+                        const Divider(color: Colors.white10),
+                        ListTile(
+                          leading: const Icon(Icons.payment, color: Colors.orange),
+                          title: const Text('UPI', style: TextStyle(color: Colors.white)),
+                          trailing: Radio(value: false, groupValue: true, onChanged: (_) {}, activeColor: Colors.orange),
+                        ),
+                        const Divider(color: Colors.white10),
+                         ListTile(
+                          leading: const Icon(Icons.money, color: Colors.orange),
+                          title: const Text('Cash on Delivery', style: TextStyle(color: Colors.white)),
+                          trailing: Radio(value: false, groupValue: true, onChanged: (_) {}, activeColor: Colors.orange),
                         ),
                       ],
                     ),
                   ),
-                // Order summary and pay button
-                Container(
-                  padding: const EdgeInsets.all(16),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Disclaimer
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.orange),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Disclaimer: Payment gateway is yet to be configured. This is a demo flow.',
+                            style: TextStyle(color: Colors.orangeAccent),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                   const SizedBox(height: 32),
+                   
+                   // Order Summary Brief
+                   Text(
+                     'Order Summary',
+                     style: TextStyle(color: Colors.grey.shade400, fontSize: 16),
+                   ),
+                   const SizedBox(height: 8),
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     children: [
+                       const Text(
+                         'Total Amount to Pay',
+                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                       ),
+                       Text(
+                         cartState.formattedTotal,
+                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orange),
+                       ),
+                     ],
+                   ),
+                ],
+              ),
+            ),
+      bottomNavigationBar: Container(
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.grey.shade900,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.shade300,
+                        color: Colors.black.withOpacity(0.2),
                         blurRadius: 10,
-                        offset: const Offset(0, -5),
+                        offset: const Offset(0, -4),
                       ),
                     ],
                   ),
                   child: SafeArea(
                     child: Column(
+                      mainAxisSize: MainAxisSize.min, // Added to prevent column from taking full height
                       children: [
                         // Order summary
                         Row(
@@ -348,9 +328,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-    );
+                  ),
+      );
   }
 }
