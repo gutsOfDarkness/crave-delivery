@@ -42,7 +42,14 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final items = (data['data']['items'] as List<dynamic>)
+      final itemsData = data['data']['items'];
+      
+      // Handle null items gracefully
+      if (itemsData == null) {
+        return [];
+      }
+      
+      final items = (itemsData as List<dynamic>)
           .map((e) => MenuItem.fromJson(e as Map<String, dynamic>))
           .toList();
       return items;
