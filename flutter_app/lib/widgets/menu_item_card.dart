@@ -81,11 +81,14 @@ class MenuItemCard extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              Text(
-                item.description,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              SizedBox(
+                height: 36,
+                child: Text(
+                  item.description,
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -260,4 +263,3 @@ class MenuItemCard extends ConsumerWidget {
    );
  }
 }
-
