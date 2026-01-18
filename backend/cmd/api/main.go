@@ -98,11 +98,12 @@ func main() {
 	}))
 
 	// CORS middleware for Flutter web/mobile clients
+	allowCredentials := cfg.AllowedOrigins != "*"
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.AllowedOrigins,
 		AllowMethods:     "GET,POST,PUT,DELETE,PATCH",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization,X-Request-ID",
-		AllowCredentials: true,
+		AllowCredentials: allowCredentials,
 		MaxAge:           3600,
 	}))
 
