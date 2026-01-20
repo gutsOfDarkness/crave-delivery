@@ -15,5 +15,6 @@ export PATH="$PATH:`pwd`/flutter/bin"
 flutter config --enable-web
 
 # Build the web app
-# You can add --dart-define args here if needed, e.g. --dart-define=API_URL=$API_URL
-flutter build web --release
+# Build the web app
+# You can add --dart-define args here if needed, e.g. --dart-define=API_BASE_URL=$API_BASE_URL
+flutter build web --release --dart-define=API_BASE_URL=$API_BASE_URL
