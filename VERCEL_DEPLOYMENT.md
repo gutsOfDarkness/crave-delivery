@@ -51,7 +51,7 @@ Deploy the Flutter web app to Vercel and host the backend separately (Railway, R
 
 ```bash
 cd flutter_app
-flutter build web --release --dart-define=API_URL=https://your-backend-url.com
+flutter build web --release --dart-define=API_BASE_URL=https://your-backend-url.com
 ```
 
 ### Step 2: Configure Vercel Project
@@ -98,17 +98,29 @@ Or connect your GitHub repository to Vercel for automatic deployments.
 
 ---
 
-## Option 2: Full-Stack on Vercel (Experimental)
+## Option 3: Backend Deployment (Recommended)
 
-Deploy both frontend and backend to Vercel using serverless functions.
+Since the backend is a Go application using PostgreSQL and Redis, it is best deployed on a platform that supports persistent containers or native Go runtimes.
 
-### Backend Configuration
+### A. Deploy to Railway (Easiest)
+1. Login to [Railway](https://railway.app).
+2. Create a new project and select "Deploy from GitHub repo".
+3. Select your repository.
+4. Add PostgreSQL and Redis services from the Railway marketplace.
+5. In your Go service "Variables":
+   - `DATABASE_URL`: Link to Postgres variable.
+   - `REDIS_URL`: Link to Redis variable or connection string.
+   - `JWT_SECRET`: Add your secret.
+   - `PORT`: `8080`.
+6. **Build Command**: `go build -o main cmd/api/main.go`
+7. **Start Command**: `./main`
+8. Copy the provided public URL (e.g., `https://web-production-xxxx.up.railway.app`) and update your Vercel Frontend `API_URL` environment variable.
 
-Create `api/` directory in project root for Go serverless functions.
+### B. Deploy to Vercel (Go Runtime)
+Create a `api/index.go` entry point that adapters Fiber to Vercel's handler, OR use a custom build.
+*Note: This requires restructuring the `cmd/api/main.go` to export a handler function compatible with Vercel's Go runtime.*
 
-Note: Go serverless functions on Vercel have cold start limitations. For production, Option 1 is recommended.
-
----
+**For this project, Container verification (Option A) is strictly recommended over Vercel functions due to potential Websocket/Keep-Alive limitations.**
 
 ## Environment Variables
 
@@ -131,7 +143,7 @@ Configure these environment variables in Vercel dashboard:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `API_URL` | Backend API base URL | `https://api.yourdomain.com` |
+| `API_BASE_URL` | Backend API base URL | `https://api.yourdomain.com` |
 
 ---
 
@@ -174,7 +186,7 @@ psql $DATABASE_URL -f backend/migrations/002_seed_data.sql
 ```bash
 # Build frontend
 cd flutter_app
-flutter build web --release --dart-define=API_URL=https://your-api.com
+flutter build web --release --dart-define=API_BASE_URL=https://your-api.com
 
 # Deploy to Vercel
 vercel --prod
