@@ -100,7 +100,7 @@ go run cmd/api/main.go
 
 | Variable | Description |
 |----------|-------------|
-| API_URL | Backend API base URL |
+| API_BASE_URL | Backend API base URL |
 
 ## Logging
 
