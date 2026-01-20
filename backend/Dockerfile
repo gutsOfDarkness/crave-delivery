@@ -18,7 +18,7 @@ COPY . .
 # Build static binary
 # -s: disable symbol table
 # -w: disable DWARF generation
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o api cmd/api/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main cmd/api/main.go
 
 # Runtime stage - SCRATCH (empty image)
 FROM scratch
@@ -26,7 +26,7 @@ FROM scratch
 WORKDIR /app
 
 # Copy binary
-COPY --from=builder /app/api .
+COPY --from=builder /app/main .
 
 # Copy timezone info (often needed)
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
@@ -38,4 +38,4 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 EXPOSE 8080
 
 # Run binary directly
-ENTRYPOINT ["./api"]
+ENTRYPOINT ["./main"]
