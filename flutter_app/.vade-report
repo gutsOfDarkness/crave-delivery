@@ -1,0 +1,61 @@
+## Vercel Speed Insights Integration
+
+### Summary
+Successfully implemented Vercel Speed Insights for the Crave Delivery Flutter web application. This enables performance metric tracking and monitoring through Vercel's Speed Insights dashboard.
+
+### Implementation Details
+
+#### Framework & Project Type
+- **Project Type**: Flutter web application
+- **Deployment Target**: Vercel
+- **Integration Method**: HTML implementation (appropriate for Flutter web)
+
+#### Changes Made
+
+**Modified Files:**
+1. `web/index.html` - Added Vercel Speed Insights tracking scripts
+
+**Details:**
+- Added the Speed Insights initialization script that creates the `window.si` global function
+- Added the deferred Speed Insights script tag that loads from `/_vercel/speed-insights/script.js`
+- Both scripts were inserted before the closing `</body>` tag to ensure proper initialization
+
+### Why This Approach
+
+The Crave Delivery project is a Flutter application that compiles to web. Since Flutter generates static HTML/JavaScript output, the HTML implementation of Vercel Speed Insights was the most appropriate choice. This approach:
+
+1. **No additional dependencies**: Flutter doesn't require npm packages for this integration
+2. **Minimal changes**: Only modified the web template, keeping the Dart codebase unchanged
+3. **Universal compatibility**: Works with any Vercel deployment of the Flutter web app
+4. **Automatic tracking**: The script automatically collects Core Web Vitals and performance metrics
+
+### Next Steps for Production
+
+1. **Enable Speed Insights in Vercel Dashboard**:
+   - Go to your Vercel project's dashboard
+   - Navigate to the "Speed Insights" tab
+   - Click "Enable" to activate Speed Insights
+
+2. **Deploy to Vercel**:
+   - The updated code will enable Speed Insights upon the next deployment
+   - Use: `vercel deploy`
+
+3. **Monitor Performance**:
+   - After deployment, Speed Insights will automatically begin collecting metrics
+   - Metrics will be visible in the dashboard after users visit your site
+   - Performance data can be tracked over time
+
+### Technical Notes
+
+- The `window.si` function is a fallback that queues any calls made before the Speed Insights script loads
+- The `script` tag uses `defer` attribute to ensure scripts load after DOM is ready
+- The scripts are positioned before the closing `</body>` tag, which is the standard placement for analytics scripts
+- No modifications to Flutter's Dart code were needed as the tracking is purely JavaScript-based
+
+### Files Modified
+- `web/index.html` - Added Speed Insights integration scripts
+
+### Verification
+- HTML syntax validated successfully
+- No build artifacts or dependencies affected
+- Ready for deployment to Vercel
